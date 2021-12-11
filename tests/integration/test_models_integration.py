@@ -5,11 +5,12 @@ from mytimestampsapi.database import SessionLocal
 from mytimestampsapi.models import User, LogMessage, Base
 import pytest
 import re
+from uuid import UUID
 import sure
 
 
-@pytest.fixture(autouse=True, scope='module')
-def db():
+@pytest.fixture(scope='module')
+def session():
     '''Create the database and setup tables'''
     print('Setting things up')
     engine = create_engine(
@@ -20,16 +21,27 @@ def db():
     Base.metadata.create_all(engine)
     # Start a session and transaction
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+    session = SessionLocal()
+    yield session
+    print('Closing stuff')
+    session.rollback()
+    session.close()
+    Base.metadata.drop_all(engine)
+
+
+@pytest.fixture(autouse=True)
+def db(session):
+    db = session
     db.begin()
     yield db
-    Base.metadata.drop_all(engine)
-    db.close()
+    db.rollback()
 
 
 # Make sure we can save a User
-def test_user_email_is_valid_email(db):
-    # User(email='asdf').should.throw(ValueError, 'Invalid Email')
-    User.when.called_with(email='adsfasd').should.throw(ValueError)
-    db.add(User(email='name@foo.com'))
-    db.commit()
+def test__valid_user_create(db):
+    user = User(email='name2@foo.com')
+    db.add(user)
+    db.flush()
+    db.refresh(user)
+    user.id.should.be.a(UUID)
+    user.id.hex.should.have.length_of(32)
