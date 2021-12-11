@@ -3,6 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class LogMessageBase(BaseModel):
     timestamp: datetime
     log_message: str

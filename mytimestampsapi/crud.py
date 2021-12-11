@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
+from mytimestampsapi import models, schemas
 from fastapi_utils.guid_type import GUID
 
 
