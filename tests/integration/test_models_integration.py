@@ -3,6 +3,7 @@ from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.orm.session import sessionmaker
 from mytimestampsapi.database import SessionLocal
 from mytimestampsapi.models import User, LogMessage, Base
+from datetime import datetime
 import pytest
 import re
 from uuid import UUID
@@ -38,10 +39,24 @@ def db(session):
 
 
 # Make sure we can save a User
-def test__valid_user_create(db):
+def test_valid_user_create(db):
     user = User(email='name2@foo.com')
     db.add(user)
     db.flush()
     db.refresh(user)
     user.id.should.be.a(UUID)
     user.id.hex.should.have.length_of(32)
+
+
+# Make sure we can save a LogMessage
+def test_valid_log_message_create(db):
+    user = User(email='name@foo.com')
+    db.add(user)
+    db.flush()
+    db.refresh(user)
+    log_message = LogMessage(user_id=user.id, log_message='some message')
+    db.add(log_message)
+    db.flush()
+    db.refresh(log_message)
+    log_message.id.should.be.a(UUID)
+    log_message.timestamp.should.be.a(datetime)

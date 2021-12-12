@@ -50,7 +50,7 @@ class LogMessage(Base):
 
     id = Column(cached_guid, primary_key=True, index=True, default=uuid4)
     user_id = Column(GUID, ForeignKey('users.id'), index=True, nullable=False)
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = Column(DateTime, nullable=False, default=datetime.now)
     log_message = Column(String(256), nullable=False)
 
     @validates('log_message')
