@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 class LogMessageBase(BaseModel):
-    timestamp: datetime
+    user_id: UUID
     log_message: str
 
 
@@ -15,7 +15,7 @@ class LogMessageCreate(LogMessageBase):
 
 class LogMessage(LogMessageBase):
     id: UUID
-    user_id: UUID
+    timestamp: datetime
 
     class Config:
         orm_mode = True
