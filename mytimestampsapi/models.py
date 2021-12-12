@@ -40,9 +40,22 @@ class User(Base):
 
 
 class LogMessage(Base):
+    # Adding __init__ allows us to unit test required fields that skip
+    # validators when not passed in.
+    def __init__(self, user_id, log_message):
+        self.user_id = user_id
+        self.log_message = log_message
+
     __tablename__ = "log_messages"
 
     id = Column(cached_guid, primary_key=True, index=True, default=uuid4)
     user_id = Column(GUID, ForeignKey('users.id'), index=True, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     log_message = Column(String(256), nullable=False)
+
+    @validates('log_message')
+    def validate_log_message(self, key, log_message):
+        if len(log_message) > 256:
+            raise ValueError(
+                'Log message cannot be greater than 256 characters')
+        return log_message
