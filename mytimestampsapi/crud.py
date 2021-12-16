@@ -32,17 +32,16 @@ def get_user_logmessages(db: Session, user_id: GUID, offset: int = 0, limit: int
     user_items = (
         db.query(models.LogMessage)
         .filter(models.LogMessage.user_id == user_id)
+        .order_by(models.LogMessage.timestamp.desc())
         .offset(offset)
         .limit(limit)
         .all()
-    ).all()
+    )
     return user_items
 
 
-def create_user_log_messages(db: Session, log_message: schemas.LogMessageCreate, user_id: GUID):
-    id = GUID(uuid4())
-    db_log_message = models.LogMessage(
-        **log_message.dict(), user_id=user_id, id=id)
+def create_user_log_messages(db: Session, log_message: schemas.LogMessageCreate):
+    db_log_message = models.LogMessage(**log_message.dict())
     db.add(db_log_message)
     db.commit()
     db.refresh(db_log_message)

@@ -53,6 +53,9 @@ class LogMessage(Base):
     timestamp = Column(DateTime, nullable=False, default=datetime.now)
     log_message = Column(String(256), nullable=False)
 
+    def __repr__(self):
+        return f'<LogMessage(id={self.id}, user_id={self.user_id}, timestamp={self.timestamp}, log_message={self.log_message})>'
+
     @validates('log_message')
     def validate_log_message(self, key, log_message):
         if len(log_message) > 256:
