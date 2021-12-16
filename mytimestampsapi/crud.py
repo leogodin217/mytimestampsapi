@@ -3,8 +3,8 @@ from mytimestampsapi import models, schemas
 from fastapi_utils.guid_type import GUID
 
 
-def get_user(db: Session, user_id: GUID):
-    return db.query(models.User).filter(models.User.id == user_id).first()
+def get_user(db: Session, id: GUID):
+    return db.query(models.User).filter(models.User.id == id).first()
 
 
 def get_user_by_email(db: Session, email: str):
