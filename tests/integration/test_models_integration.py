@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.orm.session import sessionmaker
 from mytimestampsapi.database import SessionLocal
-from mytimestampsapi.models import User, LogMessage, Base
+from mytimestampsapi.models import User, Timestamp, Base
 from datetime import datetime
 import pytest
 import re
@@ -14,14 +14,15 @@ import sure
 def session():
     '''Create the database and setup tables'''
     print('Setting things up')
-    engine = create_engine(
-        'postgresql://postgres:postgres@localhost/test_mytimestamps')
-    if not database_exists(engine.url):
-        create_database(engine.url)
+    db_url = 'postgresql://postgres:postgres@localhost/test_mytimestamps'
+    engine = create_engine(db_url)
+    if not database_exists(db_url):
+        create_database(db_url)
     # Create the tablese
     Base.metadata.create_all(engine)
     # Start a session and transaction
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=engine)
     session = SessionLocal()
     yield session
     print('Closing stuff')
@@ -30,7 +31,7 @@ def session():
     Base.metadata.drop_all(engine)
 
 
-@pytest.fixture(autouse=True)
+@ pytest.fixture(autouse=True)
 def db(session):
     db = session
     db.begin()
@@ -48,15 +49,15 @@ def test_valid_user_create(db):
     user.id.hex.should.have.length_of(32)
 
 
-# Make sure we can save a LogMessage
-def test_valid_log_message_create(db):
+# Make sure we can save a Timestamp
+def test_valid_timestamp_create(db):
     user = User(email='name@foo.com')
     db.add(user)
     db.flush()
     db.refresh(user)
-    log_message = LogMessage(user_id=user.id, log_message='some message')
-    db.add(log_message)
+    timestamp = Timestamp(user_id=user.id, message='some message')
+    db.add(timestamp)
     db.flush()
-    db.refresh(log_message)
-    log_message.id.should.be.a(UUID)
-    log_message.timestamp.should.be.a(datetime)
+    db.refresh(timestamp)
+    timestamp.id.should.be.a(UUID)
+    timestamp.timestamp.should.be.a(datetime)

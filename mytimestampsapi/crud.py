@@ -28,11 +28,11 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
-def get_user_logmessages(db: Session, user_id: GUID, offset: int = 0, limit: int = 100):
+def get_user_timestamps(db: Session, user_id: GUID, offset: int = 0, limit: int = 100):
     user_items = (
-        db.query(models.LogMessage)
-        .filter(models.LogMessage.user_id == user_id)
-        .order_by(models.LogMessage.timestamp.desc())
+        db.query(models.Timestamp)
+        .filter(models.Timestamp.user_id == user_id)
+        .order_by(models.Timestamp.timestamp.desc())
         .offset(offset)
         .limit(limit)
         .all()
@@ -40,9 +40,9 @@ def get_user_logmessages(db: Session, user_id: GUID, offset: int = 0, limit: int
     return user_items
 
 
-def create_user_log_messages(db: Session, log_message: schemas.LogMessageCreate):
-    db_log_message = models.LogMessage(**log_message.dict())
-    db.add(db_log_message)
+def create_user_timestamps(db: Session, timestamp: schemas.TimestampCreate):
+    db_timestamp = models.Timestamp(**timestamp.dict())
+    db.add(db_timestamp)
     db.commit()
-    db.refresh(db_log_message)
-    return db_log_message
+    db.refresh(db_timestamp)
+    return db_timestamp

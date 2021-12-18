@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
-from mytimestampsapi.models import User, LogMessage, Base
+from mytimestampsapi.models import User, Timestamp, Base
 import pytest
 import sure
 
@@ -16,10 +16,10 @@ import sure
 def session():
     '''Create the database and setup tables'''
     print('Setting things up')
-    engine = create_engine(
-        'postgresql://postgres:postgres@localhost/test_mytimestamps')
-    if not database_exists(engine.url):
-        create_database(engine.url)
+    db_url = 'postgresql://postgres:postgres@localhost/test_mytimestamps'
+    engine = create_engine(db_url)
+    if not database_exists(db_url):
+        create_database(db_url)
     # Create the tablese
     Base.metadata.create_all(engine)
     # Start a session and transaction
@@ -38,7 +38,7 @@ def db(session):
     yield db
     db.rollback()
     db.query(User).delete()
-    db.query(LogMessage).delete()
+    db.query(Timestamp).delete()
     db.commit()
 
 

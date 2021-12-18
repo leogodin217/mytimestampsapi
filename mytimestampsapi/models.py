@@ -26,7 +26,7 @@ class User(Base):
     email = Column(String, unique=True, index=True,
                    nullable=False, default='none')
 
-    log_messages = relationship("LogMessage")
+    timestamps = relationship("Timestamp", lazy='select')
 
     def __repr__(self):
         return f'<User(id={self.id}, email={self.email})>'
@@ -39,26 +39,26 @@ class User(Base):
         return email
 
 
-class LogMessage(Base):
+class Timestamp(Base):
     # Adding __init__ allows us to unit test required fields that skip
     # validators when not passed in.
-    def __init__(self, user_id, log_message):
+    def __init__(self, user_id, message):
         self.user_id = user_id
-        self.log_message = log_message
+        self.message = message
 
-    __tablename__ = "log_messages"
+    __tablename__ = "timestamps"
 
     id = Column(cached_guid, primary_key=True, index=True, default=uuid4)
     user_id = Column(GUID, ForeignKey('users.id'), index=True, nullable=False)
     timestamp = Column(DateTime, nullable=False, default=datetime.now)
-    log_message = Column(String(256), nullable=False)
+    message = Column(String(256), nullable=False)
 
     def __repr__(self):
-        return f'<LogMessage(id={self.id}, user_id={self.user_id}, timestamp={self.timestamp}, log_message={self.log_message})>'
+        return f'<Timestamp(id={self.id}, user_id={self.user_id}, message={self.message}, timestamp={self.timestamp})>'
 
-    @validates('log_message')
-    def validate_log_message(self, key, log_message):
-        if len(log_message) > 256:
+    @validates('message')
+    def validate_timestamp(self, key, message):
+        if len(message) > 256:
             raise ValueError(
-                'Log message cannot be greater than 256 characters')
-        return log_message
+                'Message cannot be greater than 256 characters')
+        return message

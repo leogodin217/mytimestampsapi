@@ -1,4 +1,4 @@
-from mytimestampsapi.models import User, LogMessage
+from mytimestampsapi.models import User, Timestamp
 import re
 import sure
 
@@ -27,25 +27,25 @@ def test_valid_email_is_valid():
     User.when.called_with(email='name@foo.com').should_not.throw(Exception)
 
 
-def test_logmessage_requires_message():
-    LogMessage.when.called_with().should.throw(
-        TypeError, re.compile('log_message'))
+def test_timestamp_requires_message():
+    Timestamp.when.called_with().should.throw(
+        TypeError, re.compile('message'))
 
 
-def test_logmessage_requires_user_id():
-    LogMessage.when.called_with(log_message='some message').should.throw(
+def test_timestamp_requires_user_id():
+    Timestamp.when.called_with(message='some message').should.throw(
         TypeError, re.compile(r'user_id'))
 
 
-def test_logmessage_requires_log_message():
-    LogMessage.when.called_with(user_id='someid').should.throw(
-        TypeError, re.compile(r'log_message'))
+def test_timestamp_requires_timestamp():
+    Timestamp.when.called_with(user_id='someid').should.throw(
+        TypeError, re.compile(r'message'))
 
 
-def test_logmessage_log_message_limited_to_256_characters():
+def test_timestamp_timestamp_limited_to_256_characters():
     message = ''.join(['a' for char in range(256)])
-    LogMessage.when.called_with(
-        user_id='someid', log_message=message).should_not.throw(Exception)
+    Timestamp.when.called_with(
+        user_id='someid', message=message).should_not.throw(Exception)
     message += 'a'
-    LogMessage.when.called_with(
-        user_id='someid', log_message=message).should.throw(ValueError)
+    Timestamp.when.called_with(
+        user_id='someid', message=message).should.throw(ValueError)

@@ -2,10 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.orm.session import sessionmaker
 from mytimestampsapi.database import SessionLocal
-from mytimestampsapi.schemas import UserCreate, LogMessageCreate
-from mytimestampsapi.models import User, LogMessage, Base
+from mytimestampsapi.schemas import UserCreate, TimestampCreate
+from mytimestampsapi.models import User, Timestamp, Base
 from mytimestampsapi.crud import create_user, get_user, get_users, get_user_by_email
-from mytimestampsapi.crud import create_user_log_messages, get_user_logmessages
+from mytimestampsapi.crud import create_user_timestamps, get_user_timestamps
 from datetime import datetime
 import pytest
 import re
@@ -19,10 +19,10 @@ import sure
 def session():
     '''Create the database and setup tables'''
     print('Setting things up')
-    engine = create_engine(
-        'postgresql://postgres:postgres@localhost/test_mytimestamps')
-    if not database_exists(engine.url):
-        create_database(engine.url)
+    db_url = 'postgresql://postgres:postgres@localhost/test_mytimestamps'
+    engine = create_engine(db_url)
+    if not database_exists(db_url):
+        create_database(db_url)
     # Create the tablese
     Base.metadata.create_all(engine)
     # Start a session and transaction
@@ -41,7 +41,7 @@ def db(session):
     # db.begin()
     yield db
     db.rollback()
-    db.query(LogMessage).delete()
+    db.query(Timestamp).delete()
     db.query(User).delete()
     db.commit()
 
@@ -51,7 +51,7 @@ def test_create_user(db):
     user = create_user(db=db, user=user_schema)
     user.id.should.be.a(UUID)
     user.email.should.equal('name@foo.com')
-    user.log_messages.should.be.empty
+    user.timestamps.should.be.empty
 
 
 def test_get_users(db):
@@ -74,6 +74,25 @@ def test_get_user(db):
     user_found.email.should.equal('name@foo.com')
 
 
+def test_get_user_lazy_loads_timestamps(db):
+    user = User(email='name@foo.com')
+    db.add(user)
+    db.commit()
+    timestamp1 = Timestamp(user_id=user.id, message='a message')
+    timestamp2 = Timestamp(user_id=user.id, message='another message')
+    db.add(timestamp1)
+    db.add(timestamp2)
+    db.commit()
+    user_found = get_user(db=db, id=user.id)
+    print(user)
+    # If we access timestamps it will load them,so we need to inspect the dict
+    # user_get.timestamps.should.have.length_of(0)
+    user_found.__dict__.should.have.key('email')
+    user_found.__dict__.should_not.have.key('timestamps')
+    # Now when we access log messages, they should be there
+    user_found.timestamps.should.have.length_of(2)
+
+
 def test_get_user_by_email(db):
     user_schema = UserCreate(email='name@foo.com')
     user = create_user(db=db, user=user_schema)
@@ -83,79 +102,79 @@ def test_get_user_by_email(db):
     user_found.id.should.equal(user.id)
 
 
-def test_create_log_message(db):
+def test_create_timestamp(db):
     user_schema = UserCreate(email='name@foo.com')
     user = create_user(db=db, user=user_schema)
-    log_message_schema = LogMessageCreate(
-        log_message='test logmessage', user_id=user.id)
-    log_message = create_user_log_messages(
-        db=db, log_message=log_message_schema)
-    log_message.log_message.should.equal('test logmessage')
-    log_message.id.should.be.a(UUID)
-    log_message.timestamp.should.be.a(datetime)
+    timestamp_schema = TimestampCreate(
+        message='test Timestamp', user_id=user.id)
+    timestamp = create_user_timestamps(
+        db=db, timestamp=timestamp_schema)
+    timestamp.message.should.equal('test Timestamp')
+    timestamp.id.should.be.a(UUID)
+    timestamp.timestamp.should.be.a(datetime)
 
 
-def test_get_user_logmessages_handles_offset_and_limit(db):
+def test_get_user_timestamps_handles_offset_and_limit(db):
     user_schema = UserCreate(email='name@foo.com')
     user = create_user(db=db, user=user_schema)
-    new_log_messages = []
+    new_timestamps = []
     for index in range(10):
         # Make sure we have a different timestamp
         time.sleep(.1)
-        log_message_schema = LogMessageCreate(
-            log_message='test logmessage' + str(index), user_id=user.id)
-        log_message = create_user_log_messages(
-            db=db, log_message=log_message_schema)
-        new_log_messages.append(log_message)
+        timestamp_schema = TimestampCreate(
+            message='test Timestamp' + str(index), user_id=user.id)
+        timestamp = create_user_timestamps(
+            db=db, timestamp=timestamp_schema)
+        new_timestamps.append(timestamp)
 
-    log_messages = get_user_logmessages(
+    timestamps = get_user_timestamps(
         db=db, user_id=user.id, offset=3, limit=2)
-    log_messages.should.have.length_of(2)
+    timestamps.should.have.length_of(2)
     # log messages are returned in reverse timestamp order
-    log_messages[0].log_message.should.equal('test logmessage6')
-    log_messages[1].log_message.should.equal('test logmessage5')
+    timestamps[0].message.should.equal('test Timestamp6')
+    timestamps[1].message.should.equal('test Timestamp5')
 
 
-def test_get_user_logmessages_returns_logmessages_in_reverse_time_order(db):
+def test_get_user_timestamps_returns_timestamps_in_reverse_time_order(db):
     user_schema = UserCreate(email='name@foo.com')
     user = create_user(db=db, user=user_schema)
-    new_log_messages = []
+    new_timestamps = []
     for index in range(10):
         # Make sure we have a different timestamp
         time.sleep(.1)
-        log_message_schema = LogMessageCreate(
-            log_message='test logmessage' + str(index), user_id=user.id)
-        log_message = create_user_log_messages(
-            db=db, log_message=log_message_schema)
-        new_log_messages.append(log_message)
-    log_messages = get_user_logmessages(
+        timestamp_schema = TimestampCreate(
+            message='test Timestamp' + str(index), user_id=user.id)
+        timestamp = create_user_timestamps(
+            db=db, timestamp=timestamp_schema)
+        new_timestamps.append(timestamp)
+    timestamps = get_user_timestamps(
         db=db, user_id=user.id)
-    log_messages.should.have.length_of(10)
-    log_messages[0].log_message.should.equal('test logmessage9')
-    log_messages[1].log_message.should.equal('test logmessage8')
-    log_messages[2].log_message.should.equal('test logmessage7')
-    log_messages[3].log_message.should.equal('test logmessage6')
-    log_messages[4].log_message.should.equal('test logmessage5')
-    log_messages[5].log_message.should.equal('test logmessage4')
-    log_messages[6].log_message.should.equal('test logmessage3')
-    log_messages[7].log_message.should.equal('test logmessage2')
-    log_messages[8].log_message.should.equal('test logmessage1')
-    log_messages[9].log_message.should.equal('test logmessage0')
+    timestamps.should.have.length_of(10)
+    timestamps[0].message.should.equal('test Timestamp9')
+    timestamps[1].message.should.equal('test Timestamp8')
+    timestamps[2].message.should.equal('test Timestamp7')
+    timestamps[3].message.should.equal('test Timestamp6')
+    timestamps[4].message.should.equal('test Timestamp5')
+    timestamps[5].message.should.equal('test Timestamp4')
+    timestamps[6].message.should.equal('test Timestamp3')
+    timestamps[7].message.should.equal('test Timestamp2')
+    timestamps[8].message.should.equal('test Timestamp1')
+    timestamps[9].message.should.equal('test Timestamp0')
 
 
-def test_get_user_logmessages_only_returns_the_users_log_messages(db):
+def test_get_user_timestamps_only_returns_the_users_timestamps(db):
     user1_schema = UserCreate(email='name1@foo.com')
     user1 = create_user(db=db, user=user1_schema)
-    create_user_log_messages(
-        db=db, log_message=LogMessageCreate(
-            user_id=user1.id, log_message='user 1 message 1')
+    create_user_timestamps(
+        db=db, timestamp=TimestampCreate(
+            user_id=user1.id, message='user 1 message 1')
     )
     user2_schema = UserCreate(email='name2@foo.com')
     user2 = create_user(db=db, user=user2_schema)
-    create_user_log_messages(
-        db=db, log_message=LogMessageCreate(
-            user_id=user2.id, log_message='user 2 message 1')
+    create_user_timestamps(
+        db=db, timestamp=TimestampCreate(
+            user_id=user2.id, message='user 2 message 1')
     )
-    log_messages = get_user_logmessages(db=db, user_id=user1.id)
-    log_messages.should.have.length_of(1)
-    log_messages[0].log_message.should.equal('user 1 message 1')
+    timestamps = get_user_timestamps(db=db, user_id=user1.id)
+    timestamps.should.have.length_of(1)
+    timestamps[0].message.should.equal('user 1 message 1')

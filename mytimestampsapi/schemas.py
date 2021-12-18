@@ -4,16 +4,16 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class LogMessageBase(BaseModel):
+class TimestampBase(BaseModel):
     user_id: UUID
-    log_message: str
+    message: str
 
 
-class LogMessageCreate(LogMessageBase):
+class TimestampCreate(TimestampBase):
     pass
 
 
-class LogMessage(LogMessageBase):
+class Timestamp(TimestampBase):
     id: UUID
     timestamp: datetime
 
@@ -31,7 +31,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: UUID
-    log_messages: List[LogMessage] = []
+    timestamps: List[Timestamp] = []
 
     class Config:
         orm_mode = True
