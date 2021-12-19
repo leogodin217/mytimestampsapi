@@ -30,11 +30,6 @@ def test_user_has_timestamps():
     user.timestamps[1].message.should.equal('some other message')
 
 
-def test_timestamp_base_requires_user_id():
-    TimestampBase.when.called_with().should.throw(
-        ValueError, re.compile(r'user_id'))
-
-
 def test_timestamp_base_requires_message():
     TimestampBase.when.called_with().should.throw(
         ValueError, re.compile(r'message'))

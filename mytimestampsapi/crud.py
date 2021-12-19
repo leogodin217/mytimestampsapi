@@ -4,7 +4,8 @@ from fastapi_utils.guid_type import GUID
 
 
 def get_user(db: Session, id: GUID):
-    return db.query(models.User).filter(models.User.id == id).first()
+    user = db.query(models.User).filter(models.User.id == id).first()
+    return user
 
 
 def get_user_by_email(db: Session, email: str):
@@ -40,8 +41,8 @@ def get_user_timestamps(db: Session, user_id: GUID, offset: int = 0, limit: int 
     return user_items
 
 
-def create_user_timestamps(db: Session, timestamp: schemas.TimestampCreate):
-    db_timestamp = models.Timestamp(**timestamp.dict())
+def create_user_timestamps(db: Session, user_id: GUID, timestamp: schemas.TimestampCreate):
+    db_timestamp = models.Timestamp(**timestamp.dict(), user_id=user_id)
     db.add(db_timestamp)
     db.commit()
     db.refresh(db_timestamp)

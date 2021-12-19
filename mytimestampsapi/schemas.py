@@ -5,7 +5,6 @@ from datetime import datetime
 
 
 class TimestampBase(BaseModel):
-    user_id: UUID
     message: str
 
 
@@ -15,6 +14,7 @@ class TimestampCreate(TimestampBase):
 
 class Timestamp(TimestampBase):
     id: UUID
+    user_id: UUID
     timestamp: datetime
 
     class Config:

@@ -74,6 +74,15 @@ def test_get_user(db):
     user_found.email.should.equal('name@foo.com')
 
 
+def test_get_user_by_email(db):
+    user_schema = UserCreate(email='name@foo.com')
+    user = create_user(db=db, user=user_schema)
+    user2_schema = UserCreate(email='name2@foo.com')
+    user2 = create_user(db=db, user=user2_schema)
+    user_found = get_user_by_email(db=db, email=user.email)
+    user_found.email.should.equal('name@foo.com')
+
+
 def test_get_user_lazy_loads_timestamps(db):
     user = User(email='name@foo.com')
     db.add(user)

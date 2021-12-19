@@ -4,14 +4,13 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from mytimestampsapi.models import User, Timestamp, Base
+from datetime import date, time
+import arrow
+from uuid import uuid4
 import pytest
 import sure
 
 
-# We need to override the DB used by the API. Also, handle deleting test data
-# Fortunately, SQLAlchemy and FASTAPI have methods for this. Unfortunately
-# This method is slow.
-# [TODO] See if we can use one session per test suite and just delete after each test
 @pytest.fixture(scope='module')
 def session():
     '''Create the database and setup tables'''
@@ -37,9 +36,12 @@ def db(session):
     db = session
     yield db
     db.rollback()
-    db.query(User).delete()
     db.query(Timestamp).delete()
+    db.query(User).delete()
     db.commit()
+    db.close()
+
+# This overrides the DB used by the app.
 
 
 def db_override():
@@ -85,3 +87,34 @@ def test_get_users(client, db):
     users.should.have.length_of(2)
     users[0]['email'].should.equal('me@you.com')
     users[1]['email'].should.equal('mewithout@you.com')
+
+
+def test_get_user(client, db):
+    user1 = User(email='me@you.com')
+    db.add(user1)
+    db.commit()
+    url = f'/users/{str(user1.id)}'
+    response = client.get(url)
+    response.status_code.should.equal(200)
+
+
+def test_get_invalid_user_returns_404(client):
+    user_id = str(uuid4())
+    response = client.get(f'/users/{user_id}')
+    response.status_code.should.equal(404)
+
+
+def test_create_timestamp(client, db):
+    user = User(email='me@you.com')
+    db.add(user)
+    db.commit()
+    timestamp_data = {'message': 'a message', 'user_id': str(user.id)}
+    response = client.post(
+        f'/users/{str(user.id)}/timestamps/', json=timestamp_data)
+    print(response.json())
+    response.status_code.should.equal(200)
+    response.json()['user_id'].should.equal(str(user.id))
+    response.json()['message'].should.equal('a message')
+    timestamp = arrow.get(response.json()['timestamp'])
+    timestamp.date().should.be.a(date)
+    timestamp.time().should.be.a(time)
